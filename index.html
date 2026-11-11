@@ -1,0 +1,777 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kỷ Yếu Sĩ Quan Biên Phòng - Học Viện Chính Trị</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Merriweather:ital,wght@0,400;0,700;1,400&family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        army: {
+                            800: '#1e3a1e',
+                            900: '#142814',
+                            gold: '#d4af37',
+                            red: '#be123c',
+                            border: '#15803d'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Montserrat', 'sans-serif'],
+                        serif: ['Merriweather', 'serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .army-bg {
+            background: linear-gradient(135deg, #142814 0%, #1c3d1c 50%, #0f1f0f 100%);
+        }
+        .gold-gradient {
+            background: linear-gradient(135deg, #bf953f 0%, #fcf6ba 25%, #b38728 50%, #fbf5b7 75%, #aa771c 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .gold-border {
+            border-image: linear-gradient(to bottom right, #bf953f, #fcf6ba, #aa771c) 1;
+        }
+        .card-shadow {
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
+        }
+        /* Hiệu ứng lật trang & Sổ A4 ngang */
+        .book-page-container {
+            perspective: 1500px;
+        }
+        .page-flip-effect {
+            transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+            transform-style: preserve-3d;
+        }
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #142814;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #2e5a2e;
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #d4af37;
+        }
+    </style>
+</head>
+<body class="army-bg text-slate-100 min-h-screen flex flex-col font-sans selection:bg-amber-500 selection:text-slate-900">
+
+    <!-- Header / Banner -->
+    <header class="border-b border-amber-600/30 bg-black/50 backdrop-blur-md sticky top-0 z-40 shadow-xl">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex flex-wrap justify-between items-center gap-4">
+            <div class="flex items-center space-x-3 cursor-pointer" onclick="showCoverPage()">
+                <div class="w-11 h-11 rounded-full border-2 border-amber-400/80 bg-emerald-950 flex items-center justify-center shadow-lg">
+                    <i class="fa-solid fa-book-open text-xl text-amber-400"></i>
+                </div>
+                <div>
+                    <h1 class="text-base sm:text-lg font-bold tracking-wider gold-gradient uppercase font-serif">Kỷ Yếu Sĩ Quan Biên Phòng BP27</h1>
+                    <p class="text-xs text-emerald-300 font-medium">Học viện Chính trị - Bộ Quốc phòng</p>
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="flex items-center space-x-2 text-xs sm:text-sm">
+                <button onclick="openModal('add')" class="bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-500 hover:to-amber-600 text-white font-semibold px-3 py-2 rounded-lg shadow-md flex items-center gap-1.5 transition">
+                    <i class="fa-solid fa-user-plus"></i>
+                    <span>Thêm Đồng Chí</span>
+                </button>
+                <div id="syncStatus" class="bg-emerald-900/80 text-amber-300 border border-emerald-600/50 px-3 py-2 rounded-lg text-xs flex items-center gap-1.5">
+                    <i class="fa-solid fa-cloud text-amber-400 animate-pulse"></i>
+                    <span id="syncText">Đang kết nối Cloud...</span>
+                </div>
+                <button onclick="exportData()" class="bg-emerald-900/80 hover:bg-emerald-800 text-amber-300 border border-emerald-600/50 px-3 py-2 rounded-lg transition" title="Xuất file kỷ yếu (JSON)">
+                    <i class="fa-solid fa-download"></i>
+                </button>
+                <button onclick="importDataClick()" class="bg-emerald-900/80 hover:bg-emerald-800 text-amber-300 border border-emerald-600/50 px-3 py-2 rounded-lg transition" title="Nhập file kỷ yếu (JSON)">
+                    <i class="fa-solid fa-upload"></i>
+                </button>
+                <input type="file" id="importInput" accept=".json" class="hidden" onchange="importData(event)">
+            </div>
+        </div>
+    </header>
+
+    <!-- Main View Area (Bìa / Cuốn Sổ A4 Ngang) -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-1 w-full flex flex-col justify-center items-center">
+
+        <!-- VIEW 1: TRANG BÌA CUỐN SỔ KỶ YẾU -->
+        <div id="coverView" class="w-full max-w-4xl bg-gradient-to-br from-emerald-950 via-black to-emerald-950 border-4 border-amber-500/60 rounded-2xl card-shadow p-8 sm:p-14 text-center relative overflow-hidden my-auto">
+            <!-- Decorative Border Frame -->
+            <div class="absolute inset-4 border border-amber-500/30 rounded-xl pointer-events-none"></div>
+
+            <div class="relative z-10 space-y-6">
+                <div class="w-24 h-24 mx-auto rounded-full border-4 border-amber-400 bg-emerald-900/80 flex items-center justify-center shadow-2xl">
+                    <i class="fa-solid fa-shield-halved text-5xl text-amber-400"></i>
+                </div>
+
+                <div class="space-y-2">
+                    <h3 class="text-amber-400 tracking-widest uppercase text-xs sm:text-sm font-bold">BỘ QUỐC PHÒNG • HỌC VIỆN CHÍNH TRỊ</h3>
+                    <h2 class="text-3xl sm:text-5xl font-extrabold gold-gradient font-serif tracking-wide py-2">
+                        SỔ KỶ YẾU LỚP BIÊN PHÒNG 27
+                    </h2>
+                    <p class="text-sm sm:text-base text-emerald-200 font-serif italic tracking-wider">
+                        Khóa học Sĩ quan Biên phòng (2025 - 2027)
+                    </p>
+                </div>
+
+                <div class="max-w-xl mx-auto pt-2 pb-4 border-y border-amber-500/30 my-6">
+                    <p class="text-sm text-slate-300 italic font-serif">
+                        "Kiên Cường Nơi Biên Giới - Vững Vàng Lý Luận Tại Học Viện"
+                    </p>
+                </div>
+
+                <div class="flex flex-wrap justify-center gap-4 pt-4">
+                    <button onclick="openBookAtPage(0)" class="bg-gradient-to-r from-amber-600 via-amber-500 to-amber-700 hover:from-amber-500 hover:to-amber-600 text-slate-950 font-bold px-8 py-3.5 rounded-xl shadow-2xl flex items-center gap-3 transition transform hover:scale-105 text-base sm:text-lg">
+                        <i class="fa-solid fa-book-open"></i>
+                        <span>Mở Sổ Kỷ Yếu (Lật Trang)</span>
+                    </button>
+                    <button onclick="toggleListView()" class="bg-emerald-900/90 hover:bg-emerald-800 text-amber-300 border border-amber-600/50 px-6 py-3.5 rounded-xl font-semibold transition flex items-center gap-2">
+                        <i class="fa-solid fa-table-cells"></i>
+                        <span>Xem Dạng Lưới 25 Đồng Chí</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- VIEW 2: DANH SÁCH LƯỚI (GRID VIEW) -->
+        <div id="gridView" class="w-full hidden space-y-6">
+            <div class="bg-black/40 border border-emerald-800/40 p-4 rounded-xl flex flex-col sm:flex-row justify-between items-center gap-4 backdrop-blur-sm">
+                <div class="relative w-full sm:w-96">
+                    <i class="fa-solid fa-magnifying-glass absolute left-3 top-3 text-amber-500/70"></i>
+                    <input type="text" id="searchInput" oninput="renderGrid()" placeholder="Tìm theo tên, cấp bậc, đơn vị, phòng..." class="w-full pl-9 pr-4 py-2 bg-emerald-950/60 border border-emerald-700/50 rounded-lg text-sm text-slate-100 placeholder-slate-400 focus:outline-none focus:border-amber-400">
+                </div>
+
+                <div class="flex items-center gap-4 text-xs sm:text-sm">
+                    <button onclick="showCoverPage()" class="text-amber-400 hover:underline flex items-center gap-1 font-semibold">
+                        <i class="fa-solid fa-house-chimney"></i> Trang Bìa
+                    </button>
+                    <!-- Nút chuyển nhanh từ Dạng Lưới sang Dạng Sổ Lật Trang -->
+                    <button onclick="openBookAtPage(0)" class="bg-amber-600 hover:bg-amber-500 text-slate-950 font-bold px-4 py-2 rounded-lg flex items-center gap-1.5 transition">
+                        <i class="fa-solid fa-book-open"></i> Xem Sổ Lật Trang
+                    </button>
+                    <span class="text-slate-300" id="totalCount">Hiển thị: 25 Đồng chí</span>
+                </div>
+            </div>
+
+            <div id="rosterGrid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                <!-- Rendered by JS -->
+            </div>
+        </div>
+
+        <!-- VIEW 3: CUỐN SỔ LẬT TRANG A4 NGANG (BOOK VIEW) -->
+        <div id="bookView" class="w-full hidden flex flex-col items-center">
+            
+            <!-- Book Navigation Bar Top -->
+            <div class="w-full max-w-5xl flex justify-between items-center mb-4 px-2">
+                <button onclick="showCoverPage()" class="bg-black/50 hover:bg-emerald-900 text-amber-300 border border-amber-600/40 px-4 py-2 rounded-lg text-xs sm:text-sm flex items-center gap-2 transition">
+                    <i class="fa-solid fa-arrow-left"></i> Trang Bìa
+                </button>
+                <div class="text-amber-400 font-serif font-bold text-sm sm:text-base tracking-wide" id="pageIndicator">
+                    Trang 1 / 25
+                </div>
+                <button onclick="toggleListView()" class="bg-black/50 hover:bg-emerald-900 text-amber-300 border border-amber-600/40 px-4 py-2 rounded-lg text-xs sm:text-sm flex items-center gap-2 transition">
+                    <i class="fa-solid fa-table-cells"></i> Quay lại Dạng Lưới
+                </button>
+            </div>
+
+            <!-- A4 Landscape Book Spread / Page Container -->
+            <div class="w-full max-w-5xl bg-[#fcfaf5] text-slate-900 border-8 border-emerald-950 rounded-2xl card-shadow min-h-[580px] sm:min-h-[620px] flex flex-col justify-between relative overflow-hidden book-page-container">
+                
+                <!-- Book Binding Spine Shadow Effect in Center -->
+                <div class="absolute top-0 bottom-0 left-1/2 -translate-x-1/2 w-12 bg-gradient-to-r from-transparent via-black/10 to-transparent pointer-events-none z-10"></div>
+
+                <!-- Page Header Header -->
+                <div class="bg-emerald-950 text-amber-300 px-6 sm:px-12 py-3 flex justify-between items-center border-b-2 border-amber-500/60">
+                    <div class="flex items-center gap-2 text-xs sm:text-sm font-serif font-bold">
+                        <i class="fa-solid fa-star text-amber-400"></i> HỌC VIỆN CHÍNH TRỊ • LỚP BIÊN PHÒNG 27
+                    </div>
+                    <div class="text-xs text-emerald-200 uppercase tracking-widest font-semibold" id="bookPageHeader">
+                        Sĩ Quan Biên Phòng
+                    </div>
+                </div>
+
+                <!-- Page Content (A4 Landscape 2-Column Notebook Layout) -->
+                <div id="bookPageContent" class="p-6 sm:p-10 flex-1 grid grid-cols-1 md:grid-cols-12 gap-6 items-center">
+                    <!-- Populated dynamically -->
+                </div>
+
+                <!-- Page Footer / Navigation Controls -->
+                <div class="bg-stone-200 border-t border-stone-300 px-6 py-4 flex justify-between items-center text-sm font-semibold">
+                    <button onclick="prevPage()" id="prevPageBtn" class="bg-emerald-900 hover:bg-emerald-800 text-amber-300 px-5 py-2.5 rounded-lg shadow flex items-center gap-2 transition disabled:opacity-40 disabled:cursor-not-allowed">
+                        <i class="fa-solid fa-chevron-left"></i> Trang Trước
+                    </button>
+
+                    <div class="flex items-center gap-3">
+                        <button onclick="openModal('edit', currentBookIndex)" class="bg-amber-600 hover:bg-amber-700 text-white px-4 py-2 rounded-lg shadow flex items-center gap-1.5 transition text-xs">
+                            <i class="fa-solid fa-pen-to-square"></i> Chỉnh Sửa Thông Tin
+                        </button>
+                    </div>
+
+                    <button onclick="nextPage()" id="nextPageBtn" class="bg-emerald-900 hover:bg-emerald-800 text-amber-300 px-5 py-2.5 rounded-lg shadow flex items-center gap-2 transition disabled:opacity-40 disabled:cursor-not-allowed">
+                        <span>Trang Sau</span> <i class="fa-solid fa-chevron-right"></i>
+                    </button>
+                </div>
+
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-black/60 border-t border-emerald-900/50 py-4 text-center text-xs text-slate-400 space-y-1">
+        <p class="font-semibold text-amber-400/90">HỌC VIỆN CHÍNH TRỊ - BỘ QUỐC PHÒNG</p>
+        <p>Cuốn Sổ Kỷ Yếu Điện Tử - Lớp Sĩ Quan Bộ Đội Biên Phòng BP27</p>
+    </footer>
+
+    <!-- Edit/Add Form Modal -->
+    <div id="formModal" class="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center hidden z-50 p-4 overflow-y-auto">
+        <div class="bg-emerald-950 border border-amber-500/40 rounded-xl max-w-xl w-full shadow-2xl overflow-hidden text-slate-100 my-8">
+            <div class="bg-black/50 px-6 py-4 border-b border-emerald-800/60 flex justify-between items-center">
+                <h3 class="font-serif font-bold text-lg text-amber-400" id="formModalTitle">Thêm Thông Tin Đồng Chí Mới</h3>
+                <button onclick="closeFormModal()" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark text-xl"></i></button>
+            </div>
+
+            <form id="cadreForm" onsubmit="handleFormSubmit(event)" class="p-6 space-y-4 text-xs sm:text-sm">
+                <input type="hidden" id="cadreId">
+
+                <div>
+                    <label class="block font-semibold text-amber-300 uppercase mb-1">Họ và Tên Đồng chí *</label>
+                    <input type="text" id="cadreName" required placeholder="VD: Nguyễn Văn Thắng" class="w-full px-3 py-2 bg-emerald-900/50 border border-emerald-700/60 rounded focus:outline-none focus:border-amber-400">
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block font-semibold text-amber-300 uppercase mb-1">Cấp bậc</label>
+                        <select id="cadreRank" class="w-full px-3 py-2 bg-emerald-900/50 border border-emerald-700/60 rounded focus:outline-none focus:border-amber-400">
+                            <option value="Thượng úy">Thượng úy (4/)</option>
+                            <option value="Đại úy">Đại úy (1//)</option>
+                            <option value="Thiếu tá">Thiếu tá (2//)</option>
+                            <option value="Trung tá">Trung tá (3//)</option>
+                            <option value="Thượng tá">Thượng tá (4//)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block font-semibold text-amber-300 uppercase mb-1">Chức vụ / Nhiệm vụ</label>
+                        <input type="text" id="cadrePosition" placeholder="VD: Lớp trưởng / Học viên" class="w-full px-3 py-2 bg-emerald-900/50 border border-emerald-700/60 rounded focus:outline-none focus:border-amber-400">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-3 gap-3">
+                    <div>
+                        <label class="block font-semibold text-amber-300 uppercase mb-1">Năm sinh</label>
+                        <input type="text" id="cadreBirth" placeholder="VD: 1992" class="w-full px-3 py-2 bg-emerald-900/50 border border-emerald-700/60 rounded focus:outline-none focus:border-amber-400">
+                    </div>
+                    <div>
+                        <label class="block font-semibold text-amber-300 uppercase mb-1">Đơn vị công tác</label>
+                        <input type="text" id="cadreUnit" placeholder="VD: Đồn BP Nậm Nhừ/BĐBP Điện Biên" class="w-full px-3 py-2 bg-emerald-900/50 border border-emerald-700/60 rounded focus:outline-none focus:border-amber-400">
+                    </div>
+                    <div>
+                        <label class="block font-semibold text-amber-300 uppercase mb-1">Phòng ở Học viện</label>
+                        <input type="text" id="cadreRoom" placeholder="VD: Phòng 902" class="w-full px-3 py-2 bg-emerald-900/50 border border-emerald-700/60 rounded focus:outline-none focus:border-amber-400">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block font-semibold text-amber-300 uppercase mb-1">Quê quán</label>
+                        <input type="text" id="cadreHometown" placeholder="VD: Điện Biên" class="w-full px-3 py-2 bg-emerald-900/50 border border-emerald-700/60 rounded focus:outline-none focus:border-amber-400">
+                    </div>
+                    <div>
+                        <label class="block font-semibold text-amber-300 uppercase mb-1">Số điện thoại liên lạc</label>
+                        <input type="text" id="cadrePhone" placeholder="0987.xxx.xxx" class="w-full px-3 py-2 bg-emerald-900/50 border border-emerald-700/60 rounded focus:outline-none focus:border-amber-400">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block font-semibold text-amber-300 uppercase mb-1">Nơi ở hiện nay</label>
+                        <input type="text" id="cadreAddress" placeholder="Nơi ở hiện nay" class="w-full px-3 py-2 bg-emerald-900/50 border border-emerald-700/60 rounded focus:outline-none focus:border-amber-400">
+                    </div>
+                    <div>
+                        <label class="block font-semibold text-amber-300 uppercase mb-1">URL Ảnh Chân Dung</label>
+                        <input type="text" id="cadreAvatar" placeholder="https://..." class="w-full px-3 py-2 bg-emerald-900/50 border border-emerald-700/60 rounded focus:outline-none focus:border-amber-400">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block font-semibold text-amber-300 uppercase mb-1">Châm ngôn / Phương châm sống</label>
+                    <input type="text" id="cadreMotto" placeholder="Đồn là nhà, biên giới là quê hương..." class="w-full px-3 py-2 bg-emerald-900/50 border border-emerald-700/60 rounded focus:outline-none focus:border-amber-400">
+                </div>
+
+                <div>
+                    <label class="block font-semibold text-amber-300 uppercase mb-1">Kỷ niệm đáng nhớ tại Học viện Chính trị</label>
+                    <textarea id="cadreMemories" rows="3" placeholder="Những buổi thảo luận lý luận chính trị, những đêm hành quân..." class="w-full px-3 py-2 bg-emerald-900/50 border border-emerald-700/60 rounded focus:outline-none focus:border-amber-400"></textarea>
+                </div>
+
+                <div class="flex justify-end space-x-3 pt-3 border-t border-emerald-800/60">
+                    <button type="button" onclick="closeFormModal()" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 rounded text-slate-300">Hủy</button>
+                    <button type="submit" class="px-5 py-2 bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-500 hover:to-amber-600 text-white rounded font-semibold shadow">Lưu Thông Tin</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Notification Toast -->
+    <div id="toast" class="fixed bottom-5 right-5 bg-black/90 border border-amber-500/50 text-amber-300 px-4 py-3 rounded-lg shadow-2xl text-sm flex items-center space-x-2 transition-all transform translate-y-20 opacity-0 z-50">
+        <i class="fa-solid fa-circle-check text-amber-400"></i>
+        <span id="toastMsg">Thông báo</span>
+    </div>
+
+    <!-- Logic Script -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, onSnapshot, collection } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'bien-phong-bp27-app';
+        let db = null;
+        let auth = null;
+        let isCloudActive = false;
+
+        if (typeof __firebase_config !== 'undefined') {
+            try {
+                const firebaseConfig = JSON.parse(__firebase_config);
+                const app = initializeApp(firebaseConfig);
+                db = getFirestore(app);
+                auth = getAuth(app);
+
+                const initAuth = async () => {
+                    if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                        await signInWithCustomToken(auth, __initial_auth_token);
+                    } else {
+                        await signInAnonymously(auth);
+                    }
+                };
+
+                initAuth().then(() => {
+                    setupRealtimeSync();
+                }).catch(err => {
+                    updateSyncBadge(false);
+                });
+            } catch(e) {
+                updateSyncBadge(false);
+            }
+        } else {
+            updateSyncBadge(false);
+        }
+
+        function updateSyncBadge(active) {
+            const syncText = document.getElementById('syncText');
+            const syncStatus = document.getElementById('syncStatus');
+            if (active) {
+                isCloudActive = true;
+                syncText.innerText = "Đồng bộ Đám mây (Trực tuyến)";
+                syncStatus.className = "bg-emerald-950 text-emerald-400 border border-emerald-500 px-3 py-2 rounded-lg text-xs flex items-center gap-1.5";
+            } else {
+                isCloudActive = false;
+                syncText.innerText = "Bộ nhớ máy (Offline)";
+                syncStatus.className = "bg-amber-950/80 text-amber-300 border border-amber-600/50 px-3 py-2 rounded-lg text-xs flex items-center gap-1.5";
+            }
+        }
+
+        function setupRealtimeSync() {
+            const colRef = collection(db, 'artifacts', appId, 'public', 'data', 'cadres_bp27');
+            onSnapshot(colRef, (snapshot) => {
+                updateSyncBadge(true);
+                if (!snapshot.empty) {
+                    const cloudData = [];
+                    snapshot.forEach(doc => {
+                        cloudData.push({ id: doc.id, ...doc.data() });
+                    });
+                    cloudData.sort((a, b) => parseInt(a.id) - parseInt(b.id));
+                    window.cadresData = cloudData;
+                    if (typeof window.renderApp === 'function') window.renderApp();
+                } else {
+                    window.defaultCadres.forEach(c => {
+                        setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'cadres_bp27', c.id), c);
+                    });
+                }
+            }, (error) => {
+                updateSyncBadge(false);
+            });
+        }
+
+        window.saveToCloud = function(item) {
+            if (isCloudActive && db) {
+                const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'cadres_bp27', item.id);
+                setDoc(docRef, item, { merge: true });
+            }
+        };
+    </script>
+
+    <script>
+        const defaultCadres = [
+            { id: "1", name: "Lý A Dua", rank: "Đại úy", position: "Học viên", unit: "Đồn BP Nậm Nhừ / BĐBP Điện Biên", room: "Phòng 902", hometown: "Điện Biên", address: "H. Nậm Pồ, Tỉnh Điện Biên", phone: "0983.101.902", birth: "1993", avatar: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&q=80&w=400", motto: "Đồn là nhà, biên giới là quê hương.", memories: "Học tập rèn luyện chính trị kiên định tại Học viện Chính trị." },
+            { id: "2", name: "Đinh Văn Điệp", rank: "Đại úy", position: "An ninh (AP1)", unit: "PCT / Cục HCKT / BĐBP", room: "Phòng 903", hometown: "Hà Nội", address: "Cục HCKT - Bộ Tư lệnh BĐBP", phone: "0978.202.903", birth: "1992", avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=400", motto: "Chu đáo, an toàn, hoàn thành tốt nhiệm vụ.", memories: "Đồng chí đồng đội lớp BP27 luôn thắm thiết nghĩa tình." },
+            { id: "3", name: "Đào Anh Đức", rank: "Thiếu tá", position: "Báo cáo viên (BT)", unit: "Đồn BP Nậm Lạnh / BĐBP Sơn La", room: "Phòng 1015", hometown: "Sơn La", address: "H. Sốp Cộp, Tỉnh Sơn La", phone: "0912.303.101", birth: "1989", avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&q=80&w=400", motto: "Vững vàng bản lĩnh lý luận chính trị.", memories: "Những tiết học trao đổi lý luận súc tích tại Học viện." },
+            { id: "4", name: "Mai Xuân Hợp", rank: "Đại úy", position: "An toàn viên (AT3)", unit: "PCT / BĐBP Đăk Nông", room: "Phòng 1016", hometown: "Thanh Hóa", address: "TP. Gia Nghĩa, Tỉnh Đăk Nông", phone: "0988.404.101", birth: "1991", avatar: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&q=80&w=400", motto: "Kỷ luật là sức mạnh của quân đội.", memories: "Kỷ niệm các buổi thao trường và sinh hoạt chi bộ BP27." },
+            { id: "5", name: "Phạm Bình Khuê", rank: "Đại úy", position: "An ninh (AP2)", unit: "PCT / BĐBP Long An", room: "Phòng 1003", hometown: "Long An", address: "TP. Tân An, Tỉnh Long An", phone: "0965.505.100", birth: "1993", avatar: "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?auto=format&fit=crop&q=80&w=400", motto: "Giữ vững an ninh trật tự khu vực biên giới.", memories: "Không khí ôn bài sôi nổi mỗi tối tại phòng 1003." },
+            { id: "6", name: "Giáp Tùng Linh", rank: "Thiếu tá", position: "An toàn viên (AT1)", unit: "Đồn BP Chi Lăng / BĐBP Lạng Sơn", room: "Phòng 902", hometown: "Bắc Giang", address: "H. Tràng Định, Tỉnh Lạng Sơn", phone: "0934.606.902", birth: "1988", avatar: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&q=80&w=400", motto: "Đoàn kết - Kỷ luật - Thắng lợi.", memories: "Những giờ thể thao rèn luyện thể lực của anh em phòng 902." },
+            { id: "7", name: "Trần Văn Luân", rank: "Đại úy", position: "Học viên", unit: "Đồn BP Hoằng Trường / BĐBP Thanh Hóa", room: "Phòng 903", hometown: "Thanh Hóa", address: "H. Hoằng Hóa, Tỉnh Thanh Hóa", phone: "0973.707.903", birth: "1992", avatar: "https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?auto=format&fit=crop&q=80&w=400", motto: "Sẵn sàng chiến đấu, kiên cường giữ đất trời.", memories: "Ấn tượng sâu sắc với tình đồng chí trong lớp BP27." },
+            { id: "8", name: "Nguyễn Thành Luận", rank: "Đại úy", position: "Học viên", unit: "Đồn BP Thàng Tín / BĐBP Hà Giang", room: "Phòng 1002", hometown: "Hà Giang", address: "H. Hoàng Su Phì, Tỉnh Hà Giang", phone: "0915.808.100", birth: "1994", avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=400", motto: "Vượt nắng thắng mưa nơi cao nguyên đá.", memories: "Những bữa cơm ấm áp tình nghĩa đồng đội lớp BP27." },
+            { id: "9", name: "Nguyễn Hữu Lương", rank: "Thiếu tá", position: "An toàn viên (AT2)", unit: "dHLCĐ / BĐBP Đăk Lăk", room: "Phòng 1002", hometown: "Nghệ An", address: "TP. Buôn Ma Thuột, Tỉnh Đăk Lăk", phone: "0982.909.100", birth: "1987", avatar: "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&q=80&w=400", motto: "Rèn sức rèn chí, nâng cao bản lĩnh.", memories: "Kỷ niệm thi đua lập thành tích xuất sắc của lớp." },
+            { id: "10", name: "Nguyễn Khắc Nam", rank: "Đại úy", position: "Học viên", unit: "H.Đội 2 / BĐBP Thái Bình", room: "Phòng 1016", hometown: "Thái Bình", address: "TP. Thái Bình, Tỉnh Thái Bình", phone: "0944.010.101", birth: "1993", avatar: "https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&q=80&w=400", motto: "Bình tĩnh, tự tin, hoàn thành nhiệm vụ.", memories: "Những đêm trực ban và học nhóm hăng hái tại Học viện." },
+            { id: "11", name: "Trần Thanh Nam", rank: "Đại úy", position: "Học viên", unit: "PCT / BĐBP Quảng Bình", room: "Phòng 1004", hometown: "Quảng Bình", address: "TP. Đồng Hới, Tỉnh Quảng Bình", phone: "0967.111.100", birth: "1992", avatar: "https://images.unsplash.com/photo-1501196354995-cbb51c65aaea?auto=format&fit=crop&q=80&w=400", motto: "Trung thành vô hạn với Tổ quốc và Nhân dân.", memories: "Tự hào được tham gia khóa học BP27 tại Học viện Chính trị." },
+            { id: "12", name: "Nguyễn Văn Quyết", rank: "Thiếu tá", position: "Lớp trưởng (LT)", unit: "P.DaV / CCT / BĐBP", room: "Phòng 1015", hometown: "Hà Nam", address: "Cục Chính trị - BĐBP", phone: "0989.212.101", birth: "1988", avatar: "https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?auto=format&fit=crop&q=80&w=400", motto: "Gương mẫu, trách nhiệm, dẫn dắt tập thể BP27.", memories: "Sự đoàn kết và quyết tâm cao của tập thể 25 đồng chí lớp BP27." },
+            { id: "13", name: "Nguyễn Việt Tân", rank: "Đại úy", position: "Học viên", unit: "Đồn BP Cái Cùng / BĐBP Bạc Liêu", room: "Phòng 1016", hometown: "Bạc Liêu", address: "H. Hòa Bình, Tỉnh Bạc Liêu", phone: "0976.313.101", birth: "1994", avatar: "https://images.unsplash.com/photo-1508214751196-bcfd4ca60f91?auto=format&fit=crop&q=80&w=400", motto: "Kiên cường giữ vững biển đảo bờ cõi.", memories: "Kỷ niệm những bài thảo luận lý luận chuyên sâu." },
+            { id: "14", name: "Nguyễn Thanh Thái", rank: "Đại úy", position: "An ninh (AP3)", unit: "Đồn BPCK Hồng Vân / BĐBP TP.Huế", room: "Phòng 1004", hometown: "Thừa Thiên Huế", address: "H. A Lưới, Thừa Thiên Huế", phone: "0918.414.100", birth: "1991", avatar: "https://images.unsplash.com/photo-1527980965255-d3b416303d12?auto=format&fit=crop&q=80&w=400", motto: "Biên giới là nhà, đồng bào là anh em.", memories: "Những nụ cười đồng chí trong các buổi sinh hoạt chung." },
+            { id: "15", name: "Nguyễn Văn Thắng", rank: "Đại úy", position: "Học viên", unit: "Đồn BP Tân Phú / BĐBP Tây Ninh", room: "Phòng 1003", hometown: "Tây Ninh", address: "H. Tân Châu, Tỉnh Tây Ninh", phone: "0936.515.100", birth: "1992", avatar: "https://images.unsplash.com/photo-1463453091185-61582044d556?auto=format&fit=crop&q=80&w=400", motto: "Vượt mọi khó khăn, hoàn thành xuất sắc nhiệm vụ.", memories: "Nghĩa tình đồng đội gắn bó dưới mái trường Học viện." },
+            { id: "16", name: "Nguyễn Hữu Thọ", rank: "Thượng úy", position: "Học viên", unit: "Đồn BP Sin Suối Hồ / BĐBP Lai Châu", room: "Phòng 1016", hometown: "Lai Châu", address: "H. Phong Thổ, Tỉnh Lai Châu", phone: "0981.616.101", birth: "1996", avatar: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80&w=400", motto: "Tuổi trẻ Biên phòng xung kích cống hiến.", memories: "Tự hào là học viên trẻ tuổi hăng hái của lớp BP27." },
+            { id: "17", name: "Bùi Đức Thuận", rank: "Đại úy", position: "Học viên", unit: "PCT / BĐBP TP.HCM", room: "Phòng 1003", hometown: "TP. Hồ Chí Minh", address: "Bộ Chỉ huy BĐBP TP.HCM", phone: "0945.717.100", birth: "1990", avatar: "https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?auto=format&fit=crop&q=80&w=400", motto: "Tận tụy, sáng tạo, giữ vững bản lĩnh.", memories: "Những giờ giải lao rộn rã tiếng cười cùng anh em phòng 1003." },
+            { id: "18", name: "Lê Công Toản", rank: "Thượng úy", position: "Học viên", unit: "PCT / BĐBP Quảng Nam", room: "Phòng 1004", hometown: "Quảng Nam", address: "TP. Tam Kỳ, Tỉnh Quảng Nam", phone: "0968.818.100", birth: "1995", avatar: "https://images.unsplash.com/photo-1520813792240-56fc4a3765a7?auto=format&fit=crop&q=80&w=400", motto: "Nhiệt huyết thanh niên, hết lòng phụng sự.", memories: "Không khí ôn thi nghiêm túc trước mỗi kỳ thi tại Học viện." },
+            { id: "19", name: "Dương Chí Tôn", rank: "Thượng úy", position: "Học viên", unit: "Đồn BP Xẻo Nhàu / BĐBP Kiên Giang", room: "Phòng 1002", hometown: "Kiên Giang", address: "H. An Minh, Tỉnh Kiên Giang", phone: "0914.919.100", birth: "1996", avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&q=80&w=400", motto: "Giữ vững bình yên vùng sông nước miền Tây.", memories: "Ấn tượng với sự chỉ bảo tận tình của các thầy cô giáo Học viện." },
+            { id: "20", name: "Võ Văn Trung", rank: "Đại úy", position: "Học viên", unit: "Đồn BP Thường Phước / BĐBP Đồng Tháp", room: "Phòng 1002", hometown: "Đồng Tháp", address: "H. Hồng Ngự, Tỉnh Đồng Tháp", phone: "0985.020.100", birth: "1992", avatar: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&q=80&w=400", motto: "Trung thành, dũng cảm, khắc phục khó khăn.", memories: "Những kỷ niệm giao lưu văn nghệ hào hùng của khóa 2025-2027." },
+            { id: "21", name: "Phạm Đức Trường", rank: "Đại úy", position: "Học viên", unit: "Đồn BP Ga Ry / BĐBP Quảng Nam", room: "Phòng 903", hometown: "Quảng Nam", address: "H. Tây Giang, Tỉnh Quảng Nam", phone: "0972.121.903", birth: "1993", avatar: "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?auto=format&fit=crop&q=80&w=400", motto: "Vượt gian khổ, giữ trọn niềm tin nơi biên giới.", memories: "Tình đồng chí thắm thiết tại phòng 903." },
+            { id: "22", name: "Nguyễn Anh Tuấn", rank: "Thiếu tá", position: "Lớp phó (LP)", unit: "Đồn BP Pa Ủ / BĐBP Lai Châu", room: "Phòng 1003", hometown: "Hà Tĩnh", address: "H. Mường Tè, Tỉnh Lai Châu", phone: "0938.222.100", birth: "1988", avatar: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&q=80&w=400", motto: "Nỗ lực học tập, gương mẫu trong học tập rèn luyện.", memories: "Nhớ những buổi đôn đốc, cùng cán bộ lớp duy trì nề nếp BP27." },
+            { id: "23", name: "Hoàng Xuân Tuyên", rank: "Thiếu tá", position: "Học viên", unit: "Đồn BP Bù Đốp / BĐBP Bình Phước", room: "Phòng 902", hometown: "Bình Phước", address: "H. Bù Đốp, Tỉnh Bình Phước", phone: "0919.323.902", birth: "1989", avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=400", motto: "Đoàn kết tốt, kỷ luật nghiêm, học tập giỏi.", memories: "Kỷ niệm các buổi sinh hoạt ngoại khóa của lớp BP27." },
+            { id: "24", name: "Trần Văn Tú", rank: "Thượng úy", position: "Học viên", unit: "Đồn BPCKQT Bình Hiệp / BĐBP Long An", room: "Phòng 1004", hometown: "Long An", address: "TX. Kế Tường, Tỉnh Long An", phone: "0986.424.100", birth: "1995", avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&q=80&w=400", motto: "Cảnh giác cao độ, bảo vệ an ninh cửa khẩu.", memories: "Những ngày tháng học tập tích cực under Học viện Chính trị." },
+            { id: "25", name: "Trần Việt", rank: "Thượng úy", position: "Học viên", unit: "Đồn BP Thanh Hải / BĐBP Bình Thuận", room: "Phòng 902", hometown: "Bình Thuận", address: "TP. Phan Thiết, Tỉnh Bình Thuận", phone: "0942.525.902", birth: "1994", avatar: "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&q=80&w=400", motto: "Vững tay súng, vững niềm tin nơi tuyến đầu.", memories: "Tình bạn thắm thiết của 25 đồng chí sĩ quan Biên phòng khóa 2025-2027." }
+        ];
+
+        window.cadresData = [...defaultCadres];
+        let currentBookIndex = 0;
+        let currentView = 'cover'; // 'cover', 'book', 'grid'
+
+        window.onload = function() {
+            loadLocalData();
+            showCoverPage();
+        };
+
+        function loadLocalData() {
+            const data = localStorage.getItem('bien_phong_ky_yeu_data_bp27_v2');
+            if (data) {
+                try {
+                    window.cadresData = JSON.parse(data);
+                } catch(e) {
+                    window.cadresData = [...defaultCadres];
+                }
+            }
+        }
+
+        function saveData() {
+            localStorage.setItem('bien_phong_ky_yeu_data_bp27_v2', JSON.stringify(window.cadresData));
+            if (currentView === 'book') renderBookPage();
+            if (currentView === 'grid') renderGrid();
+        }
+
+        function showCoverPage() {
+            currentView = 'cover';
+            document.getElementById('coverView').classList.remove('hidden');
+            document.getElementById('bookView').classList.add('hidden');
+            document.getElementById('gridView').classList.add('hidden');
+        }
+
+        function toggleListView() {
+            currentView = 'grid';
+            document.getElementById('coverView').classList.add('hidden');
+            document.getElementById('bookView').classList.add('hidden');
+            document.getElementById('gridView').classList.remove('hidden');
+            renderGrid();
+        }
+
+        function openBookAtPage(index) {
+            currentView = 'book';
+            currentBookIndex = index;
+            document.getElementById('coverView').classList.add('hidden');
+            document.getElementById('gridView').classList.add('hidden');
+            document.getElementById('bookView').classList.remove('hidden');
+            renderBookPage();
+        }
+
+        function nextPage() {
+            if (currentBookIndex < window.cadresData.length - 1) {
+                currentBookIndex++;
+                renderBookPageWithFlip('next');
+            }
+        }
+
+        function prevPage() {
+            if (currentBookIndex > 0) {
+                currentBookIndex--;
+                renderBookPageWithFlip('prev');
+            }
+        }
+
+        function renderBookPageWithFlip(direction) {
+            const container = document.getElementById('bookView');
+            container.classList.add('page-flip-effect');
+            setTimeout(() => {
+                container.classList.remove('page-flip-effect');
+            }, 300);
+            renderBookPage();
+        }
+
+        // Render trang sổ kỷ yếu A4 ngang cho từng đồng chí
+        function renderBookPage() {
+            const c = window.cadresData[currentBookIndex];
+            if (!c) return;
+
+            document.getElementById('pageIndicator').innerText = `Trang ${currentBookIndex + 1} / ${window.cadresData.length}`;
+            document.getElementById('bookPageHeader').innerText = `Đồng chí: ${c.name} • ${c.rank}`;
+
+            document.getElementById('prevPageBtn').disabled = currentBookIndex === 0;
+            document.getElementById('nextPageBtn').disabled = currentBookIndex === window.cadresData.length - 1;
+
+            const content = document.getElementById('bookPageContent');
+            content.innerHTML = `
+                <!-- Cột Trái: Ảnh chân dung & Huy hiệu -->
+                <div class="md:col-span-5 flex flex-col items-center justify-center p-4 border-r-2 border-dashed border-emerald-900/20 space-y-4">
+                    <div class="relative w-48 h-60 sm:w-56 sm:h-72 rounded-xl overflow-hidden border-4 border-amber-600/80 card-shadow bg-emerald-900">
+                        <img src="${c.avatar}" alt="${c.name}" class="w-full h-full object-cover" onerror="this.src='https://placehold.co/400x500/142814/d4af37?text=Anh+Chan+Dung'">
+                        <div class="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent p-3 text-center">
+                            <p class="text-xs text-amber-400 font-bold uppercase tracking-wider">${c.rank}</p>
+                            <p class="text-sm font-bold text-white">${c.name}</p>
+                        </div>
+                    </div>
+                    <div class="text-center">
+                        <span class="inline-block bg-amber-500/10 border border-amber-600/40 text-amber-800 px-3 py-1 rounded-full text-xs font-semibold">
+                            <i class="fa-solid fa-location-dot mr-1"></i> Phòng ở Học viện: ${c.room || 'Đang cập nhật'}
+                        </span>
+                    </div>
+                </div>
+
+                <!-- Cột Phải: Thông tin chi tiết chuẩn biên phòng -->
+                <div class="md:col-span-7 space-y-4 p-2 font-serif text-slate-800">
+                    <div class="border-b-2 border-amber-600/40 pb-2">
+                        <h3 class="text-xl sm:text-2xl font-extrabold text-emerald-950 uppercase">${c.name}</h3>
+                        <p class="text-xs text-amber-700 font-sans font-bold uppercase tracking-widest mt-0.5">${c.rank} • ${c.position || 'Học viên'}</p>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs sm:text-sm font-sans">
+                        <div class="bg-stone-100 p-2.5 rounded-lg border border-stone-200">
+                            <span class="block text-[11px] font-bold text-amber-800 uppercase"><i class="fa-solid fa-medal mr-1"></i> Cấp bậc:</span>
+                            <span class="font-medium text-slate-900">${c.rank}</span>
+                        </div>
+                        <div class="bg-stone-100 p-2.5 rounded-lg border border-stone-200">
+                            <span class="block text-[11px] font-bold text-amber-800 uppercase"><i class="fa-solid fa-id-badge mr-1"></i> Chức vụ:</span>
+                            <span class="font-medium text-slate-900">${c.position || 'Học viên'}</span>
+                        </div>
+                        <div class="bg-stone-100 p-2.5 rounded-lg border border-stone-200 sm:col-span-2">
+                            <span class="block text-[11px] font-bold text-amber-800 uppercase"><i class="fa-solid fa-building-shield mr-1"></i> Đơn vị công tác:</span>
+                            <span class="font-medium text-slate-900">${c.unit}</span>
+                        </div>
+                        <div class="bg-stone-100 p-2.5 rounded-lg border border-stone-200">
+                            <span class="block text-[11px] font-bold text-amber-800 uppercase"><i class="fa-solid fa-earth-americas mr-1"></i> Quê quán:</span>
+                            <span class="font-medium text-slate-900">${c.hometown || 'Đang cập nhật'}</span>
+                        </div>
+                        <div class="bg-stone-100 p-2.5 rounded-lg border border-stone-200">
+                            <span class="block text-[11px] font-bold text-amber-800 uppercase"><i class="fa-solid fa-house mr-1"></i> Nơi ở hiện nay:</span>
+                            <span class="font-medium text-slate-900">${c.address || 'Đang cập nhật'}</span>
+                        </div>
+                        <div class="bg-stone-100 p-2.5 rounded-lg border border-stone-200 sm:col-span-2">
+                            <span class="block text-[11px] font-bold text-amber-800 uppercase"><i class="fa-solid fa-phone-volume mr-1"></i> Số điện thoại liên lạc:</span>
+                            <span class="font-medium text-slate-900">${c.phone || 'Chưa cập nhật'}</span>
+                        </div>
+                    </div>
+
+                    <div class="bg-amber-50/80 border-l-4 border-amber-600 p-3 rounded text-xs italic font-serif text-amber-950">
+                        <i class="fa-solid fa-quote-left mr-1 text-amber-600"></i> ${c.motto || 'Đồn là nhà, biên giới là quê hương.'}
+                    </div>
+
+                    <div class="text-xs text-slate-600 font-sans bg-stone-100 p-2.5 rounded border border-stone-200">
+                        <span class="font-bold text-emerald-900 block mb-1"><i class="fa-solid fa-bookmark mr-1"></i> Kỷ niệm tại Học viện Chính trị:</span>
+                        ${c.memories || 'Gắn bó đoàn kết cùng tập thể lớp BP27.'}
+                    </div>
+                </div>
+            `;
+        }
+
+        // Render Grid View
+        function renderGrid() {
+            const container = document.getElementById('rosterGrid');
+            const keyword = document.getElementById('searchInput').value.toLowerCase().trim();
+            container.innerHTML = '';
+
+            const filtered = window.cadresData.filter(c => 
+                c.name.toLowerCase().includes(keyword) || 
+                c.unit.toLowerCase().includes(keyword) || 
+                c.rank.toLowerCase().includes(keyword) ||
+                (c.room && c.room.toLowerCase().includes(keyword))
+            );
+
+            document.getElementById('totalCount').innerText = `Hiển thị: ${filtered.length} / ${window.cadresData.length} Đồng chí`;
+
+            if (filtered.length === 0) {
+                container.innerHTML = `<div class="col-span-full text-center text-slate-400 py-12">Không tìm thấy đồng chí phù hợp...</div>`;
+                return;
+            }
+
+            filtered.forEach((c) => {
+                const originalIndex = window.cadresData.findIndex(item => item.id === c.id);
+                const card = document.createElement('div');
+                card.className = "bg-emerald-950/90 border border-amber-500/30 rounded-xl overflow-hidden card-shadow flex flex-col justify-between hover:border-amber-400 transition transform hover:-translate-y-1";
+                
+                card.innerHTML = `
+                    <div class="relative h-48 bg-black overflow-hidden cursor-pointer" onclick="openBookAtPage(${originalIndex})">
+                        <img src="${c.avatar}" alt="${c.name}" class="w-full h-full object-cover opacity-90 hover:scale-105 transition duration-300" onerror="this.src='https://placehold.co/400x400/142814/d4af37?text=Chan+Dung'">
+                        <div class="absolute top-2 right-2 bg-black/70 border border-amber-400/60 text-amber-300 px-2 py-0.5 rounded text-[11px] font-bold">
+                            ${c.rank}
+                        </div>
+                        <div class="absolute bottom-2 left-2 bg-emerald-900/90 text-amber-300 px-2.5 py-0.5 rounded text-[11px] font-semibold">
+                            <i class="fa-solid fa-door-open mr-1"></i> ${c.room || 'Phòng...'}
+                        </div>
+                    </div>
+
+                    <div class="p-4 space-y-2 flex-1 flex flex-col justify-between">
+                        <div>
+                            <h3 class="font-serif font-bold text-white text-base truncate cursor-pointer hover:text-amber-400" onclick="openBookAtPage(${originalIndex})">${c.name}</h3>
+                            <p class="text-xs text-amber-300/90 font-medium truncate">${c.position || 'Học viên'}</p>
+                            <p class="text-[11px] text-slate-300 mt-1 line-clamp-2"><i class="fa-solid fa-building-shield text-amber-500 mr-1"></i>${c.unit}</p>
+                        </div>
+
+                        <div class="pt-3 border-t border-emerald-900/60 flex items-center justify-between text-xs">
+                            <button onclick="openBookAtPage(${originalIndex})" class="bg-amber-600 hover:bg-amber-700 text-white px-3 py-1.5 rounded font-semibold flex items-center gap-1.5 transition w-full justify-center">
+                                <i class="fa-solid fa-book-open"></i> Xem Sổ Kỷ Yếu
+                            </button>
+                        </div>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        // Modal Controls
+        function openModal(mode, targetIndex = null) {
+            const modal = document.getElementById('formModal');
+            const form = document.getElementById('cadreForm');
+            form.reset();
+
+            document.getElementById('cadreId').value = '';
+
+            if (mode === 'edit' && targetIndex !== null) {
+                const c = window.cadresData[targetIndex];
+                if (c) {
+                    document.getElementById('formModalTitle').innerText = `Chỉnh Sửa: ${c.name}`;
+                    document.getElementById('cadreId').value = c.id;
+                    document.getElementById('cadreName').value = c.name;
+                    document.getElementById('cadreRank').value = c.rank;
+                    document.getElementById('cadrePosition').value = c.position || '';
+                    document.getElementById('cadreRoom').value = c.room || '';
+                    document.getElementById('cadreBirth').value = c.birth || '';
+                    document.getElementById('cadreUnit').value = c.unit || '';
+                    document.getElementById('cadreHometown').value = c.hometown || '';
+                    document.getElementById('cadreAddress').value = c.address || '';
+                    document.getElementById('cadrePhone').value = c.phone || '';
+                    document.getElementById('cadreAvatar').value = c.avatar || '';
+                    document.getElementById('cadreMotto').value = c.motto || '';
+                    document.getElementById('cadreMemories').value = c.memories || '';
+                }
+            } else {
+                document.getElementById('formModalTitle').innerText = "Thêm Đồng Chí Mới Vào Kỷ Yếu";
+            }
+
+            modal.classList.remove('hidden');
+        }
+
+        function closeFormModal() {
+            document.getElementById('formModal').classList.add('hidden');
+        }
+
+        function handleFormSubmit(e) {
+            e.preventDefault();
+
+            const id = document.getElementById('cadreId').value;
+            const name = document.getElementById('cadreName').value.trim();
+            const rank = document.getElementById('cadreRank').value;
+            const position = document.getElementById('cadrePosition').value.trim();
+            const room = document.getElementById('cadreRoom').value.trim();
+            const birth = document.getElementById('cadreBirth').value.trim();
+            const unit = document.getElementById('cadreUnit').value.trim();
+            const hometown = document.getElementById('cadreHometown').value.trim();
+            const address = document.getElementById('cadreAddress').value.trim();
+            const phone = document.getElementById('cadrePhone').value.trim();
+            const avatar = document.getElementById('cadreAvatar').value.trim() || 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&q=80&w=400';
+            const motto = document.getElementById('cadreMotto').value.trim();
+            const memories = document.getElementById('cadreMemories').value.trim();
+
+            let itemToSave = null;
+
+            if (id) {
+                const index = window.cadresData.findIndex(c => c.id === id);
+                if (index !== -1) {
+                    itemToSave = { id, name, rank, position, room, birth, unit, hometown, address, phone, avatar, motto, memories };
+                    window.cadresData[index] = itemToSave;
+                    showToast("Đã cập nhật thông tin đồng chí!");
+                }
+            } else {
+                itemToSave = {
+                    id: Date.now().toString(),
+                    name, rank, position, room, birth, unit, hometown, address, phone, avatar, motto, memories
+                };
+                window.cadresData.push(itemToSave);
+                showToast("Đã thêm đồng chí mới vào kỷ yếu!");
+            }
+
+            if (itemToSave && window.saveToCloud) {
+                window.saveToCloud(itemToSave);
+            }
+
+            saveData();
+            closeFormModal();
+        }
+
+        // Export / Import
+        function exportData() {
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(window.cadresData, null, 2));
+            const downloadAnchor = document.createElement('a');
+            downloadAnchor.setAttribute("href", dataStr);
+            downloadAnchor.setAttribute("download", `ky_yeu_bien_phong_bp27_${new Date().toISOString().slice(0,10)}.json`);
+            document.body.appendChild(downloadAnchor);
+            downloadAnchor.click();
+            downloadAnchor.remove();
+            showToast("Đã xuất file kỷ yếu JSON!");
+        }
+
+        function importDataClick() {
+            document.getElementById('importInput').click();
+        }
+
+        function importData(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const imported = JSON.parse(e.target.result);
+                    if (Array.isArray(imported)) {
+                        window.cadresData = imported;
+                        saveData();
+                        showToast("Đã nhập dữ liệu kỷ yếu thành công!");
+                    } else {
+                        showToast("File JSON không hợp lệ.");
+                    }
+                } catch(err) {
+                    showToast("Không thể đọc file JSON.");
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            document.getElementById('toastMsg').innerText = msg;
+            toast.classList.remove('translate-y-20', 'opacity-0');
+            setTimeout(() => {
+                toast.classList.add('translate-y-20', 'opacity-0');
+            }, 3000);
+        }
+    </script>
+</body>
+</html>
